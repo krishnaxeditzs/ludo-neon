@@ -369,6 +369,11 @@
         <label class="block text-xs font-bold tracking-widest text-zinc-400" for="room-code-input">ROOM CODE</label>
         <input id="room-code-input" maxlength="6" autocomplete="off" placeholder="ABCD23" class="mt-2 w-full rounded-xl border border-zinc-700 bg-black p-3 text-center font-mono text-xl font-black tracking-[.25em] text-white uppercase outline-none focus:border-cyan-400" />
         <button id="join-room-btn" onclick="OnlineMultiplayer.joinRoom(document.getElementById('room-code-input').value)" class="mt-3 w-full rounded-xl border border-cyan-400 py-3 font-black text-cyan-200 transition hover:bg-cyan-400/10">JOIN ROOM</button>
+        <div id="color-picker" class="hidden mt-5">
+          <p class="text-center text-xs font-bold tracking-widest text-zinc-400">CHOOSE YOUR COLOR</p>
+          <div id="color-choice-buttons" class="mt-3 grid grid-cols-2 gap-2"></div>
+          <button id="start-match-btn" onclick="OnlineMultiplayer.startMatch()" class="hidden mt-3 w-full rounded-xl bg-white py-3 font-black text-black transition hover:bg-zinc-200">START MATCH</button>
+        </div>
         <p id="online-status" class="mt-4 min-h-5 text-center text-sm text-zinc-400" aria-live="polite"></p>
       </div>
     </div>

@@ -592,7 +592,9 @@ window.startGame = function () {
   updateTurnAura();
   state = "waiting";
   startTurn();
-  if (onlineConfig) window.OnlineMultiplayer.syncGameState();
+  if (onlineConfig && window.OnlineMultiplayer.shouldPublishInitialState()) {
+    window.OnlineMultiplayer.syncGameState();
+  }
 };
 
 function createTokensDom() {
