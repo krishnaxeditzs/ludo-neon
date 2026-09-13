@@ -5,7 +5,8 @@ const OnlineMultiplayer = (() => {
   let myColor = null;
   let active = false;
   let receivingState = false;
-  const COLORS = ["red", "green"];
+  // Kept distinct from the main game's global COLORS constant.
+  const ONLINE_PLAYER_COLORS = ["red", "green"];
 
   const $ = (id) => document.getElementById(id);
   const status = (message, error = false) => {
@@ -86,7 +87,7 @@ const OnlineMultiplayer = (() => {
   return {
     isActive: () => active,
     canAct: (color) => active && color === myColor,
-    getConfig: () => (active ? { colors: COLORS } : null),
+    getConfig: () => (active ? { colors: ONLINE_PLAYER_COLORS } : null),
     syncGameState: () => {
       if (active && !receivingState && socket?.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ type: "state", state: snapshot() }));
