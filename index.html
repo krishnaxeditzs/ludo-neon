@@ -364,11 +364,11 @@
         <button id="close-online-btn" class="absolute right-4 top-3 text-zinc-400 hover:text-white" aria-label="Close online multiplayer">✕</button>
         <h2 class="text-2xl font-black tracking-tight text-white">ONLINE ARENA</h2>
         <p class="mt-2 text-sm text-zinc-400">Create a private room or join a friend using their room code.</p>
-        <button id="create-room-btn" class="mt-6 w-full rounded-xl bg-cyan-400 py-3 font-black text-black transition hover:bg-cyan-300">CREATE ROOM</button>
+        <button id="create-room-btn" onclick="OnlineMultiplayer.createRoom()" class="mt-6 w-full rounded-xl bg-cyan-400 py-3 font-black text-black transition hover:bg-cyan-300">CREATE ROOM</button>
         <div class="my-5 flex items-center gap-3 text-xs text-zinc-600"><span class="h-px flex-1 bg-zinc-800"></span>OR<span class="h-px flex-1 bg-zinc-800"></span></div>
         <label class="block text-xs font-bold tracking-widest text-zinc-400" for="room-code-input">ROOM CODE</label>
         <input id="room-code-input" maxlength="6" autocomplete="off" placeholder="ABCD23" class="mt-2 w-full rounded-xl border border-zinc-700 bg-black p-3 text-center font-mono text-xl font-black tracking-[.25em] text-white uppercase outline-none focus:border-cyan-400" />
-        <button id="join-room-btn" class="mt-3 w-full rounded-xl border border-cyan-400 py-3 font-black text-cyan-200 transition hover:bg-cyan-400/10">JOIN ROOM</button>
+        <button id="join-room-btn" onclick="OnlineMultiplayer.joinRoom(document.getElementById('room-code-input').value)" class="mt-3 w-full rounded-xl border border-cyan-400 py-3 font-black text-cyan-200 transition hover:bg-cyan-400/10">JOIN ROOM</button>
         <p id="online-status" class="mt-4 min-h-5 text-center text-sm text-zinc-400" aria-live="polite"></p>
       </div>
     </div>

@@ -100,6 +100,19 @@ const OnlineMultiplayer = (() => {
       socket?.close();
       socket = null;
     },
+    createRoom: () => {
+      OnlineMultiplayer.leaveRoom();
+      connect("create");
+    },
+    joinRoom: (rawCode) => {
+      const code = rawCode.trim().toUpperCase();
+      if (!/^[A-Z0-9]{6}$/.test(code)) {
+        status("Enter the six-character room code.", true);
+        return;
+      }
+      OnlineMultiplayer.leaveRoom();
+      connect("join", code);
+    },
   };
 })();
 
@@ -116,11 +129,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
   document.getElementById("close-online-btn").onclick = () => modal.classList.add("hidden");
-  document.getElementById("create-room-btn").onclick = () => OnlineMultiplayer.leaveRoom() || connect("create");
-  document.getElementById("join-room-btn").onclick = () => {
-    const code = document.getElementById("room-code-input").value.trim().toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(code)) return status("Enter the six-character room code.", true);
-    OnlineMultiplayer.leaveRoom();
-    connect("join", code);
-  };
 });
