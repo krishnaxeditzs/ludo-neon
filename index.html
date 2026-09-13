@@ -1,268 +1,376 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Ludo Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="manifest.json?v=24">
-        <meta name="theme-color" content="#00ff99">
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="style.css" />
     <link rel="icon" href="images/icon.svg" />
-
-</head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
-
+  </head>
+  <body class="flex flex-col items-center justify-center min-h-screen p-4">
+    <!--   MAIN MENU  -->
+    <div id="main-menu" class="screen"></div>
     <!-- Screen 1: Setup -->
-    <div id="setup-screen" class="w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-        <!-- Update 1 Applied here: Thin White Neon Title -->
-        <h1 class="text-4xl text-center mb-8 tracking-tighter">
-            <span class="font-black text-white">LUDO</span> 
-            <span class="neon-title-thin">NEON</span>
-        </h1>
-        
-        <div class="space-y-4">
-            <div class="color-card red flex justify-between items-center">
-                <span class="font-bold text-red-400 text-lg">Red Player</span>
-                <select id="p-red" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-red-500">
-                    <option value="human">Human</option>
-                    <option value="ai">AI</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card green flex justify-between items-center">
-                <span class="font-bold text-green-400 text-lg">Green Player</span>
-                <select id="p-green" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-green-500">
-                    <option value="human">Human</option>
-                    <option value="ai">AI</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card blue flex justify-between items-center">
-                <span class="font-bold text-blue-400 text-lg">Blue Player</span>
-                <select id="p-blue" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-blue-500">
-                    <option value="ai">AI</option>
-                    <option value="human">Human</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card yellow flex justify-between items-center">
-                <span class="font-bold text-yellow-400 text-lg">Yellow Player</span>
-                <select id="p-yellow" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-yellow-500">
-                    <option value="ai">AI</option>
-                    <option value="human">Human</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
+    <div
+      id="setup-screen"
+      class="w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+    >
+      <!-- Update 1 Applied here: Thin White Neon Title -->
+      <h1 class="text-4xl text-center mb-8 tracking-tighter">
+        <span class="font-black text-white">LUDO</span>
+        <span class="neon-title-thin">NEON</span>
+      </h1>
+
+      <div class="space-y-4">
+        <div class="color-card red flex justify-between items-center">
+          <span class="font-bold text-red-400 text-lg">Red Player</span>
+          <select
+            id="p-red"
+            class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-red-500"
+          >
+            <option value="human">Human</option>
+            <option value="ai">AI</option>
+            <option value="none">None</option>
+          </select>
         </div>
-        
-        <p id="setup-err" class="text-red-400 text-sm mt-4 text-center hidden">Need at least 2 players!</p>
-        <div class="mt-8 space-y-3">
+        <div class="color-card green flex justify-between items-center">
+          <span class="font-bold text-green-400 text-lg">Green Player</span>
+          <select
+            id="p-green"
+            class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-green-500"
+          >
+            <option value="human">Human</option>
+            <option value="ai">AI</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="color-card blue flex justify-between items-center">
+          <span class="font-bold text-blue-400 text-lg">Blue Player</span>
+          <select
+            id="p-blue"
+            class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-blue-500"
+          >
+            <option value="ai">AI</option>
+            <option value="human">Human</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="color-card yellow flex justify-between items-center">
+          <span class="font-bold text-yellow-400 text-lg">Yellow Player</span>
+          <select
+            id="p-yellow"
+            class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-yellow-500"
+          >
+            <option value="ai">AI</option>
+            <option value="human">Human</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+      </div>
 
-                <button id="open-settings-btn"
-                    class="w-full bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
-                    ⚙ SETTINGS
-                </button>
+      <p id="setup-err" class="text-red-400 text-sm mt-4 text-center hidden">
+        Need at least 2 players!
+      </p>
+      <div class="mt-8 space-y-3">
+        <button
+          id="open-settings-btn"
+          class="w-full bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all"
+        >
+          ⚙ SETTINGS
+        </button>
 
-                <button id="enter-arena" onclick="startGame()"
-                    class="w-full bg-white text-black hover:bg-zinc-200 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-widest">
-                    ▶ ENTER THE ARENA
-    </button>
+        <button
+          id="open-online-btn"
+          class="w-full bg-cyan-400/10 border border-cyan-400 text-cyan-200 hover:bg-cyan-400/20 font-black py-3 rounded-xl transition-all"
+        >
+          ◉ PLAY ONLINE
+        </button>
 
+        <button
+          id="enter-arena"
+          onclick="startGame()"
+          class="w-full bg-white text-black hover:bg-zinc-200 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-widest"
+        >
+          ▶ ENTER THE ARENA
+        </button>
+      </div>
     </div>
-</div>
 
     <!-- Screen 2: Game -->
-    <div id="game-screen" class="hidden w-full max-w-5xl flex flex-col lg:flex-row gap-8 items-center justify-center">
-        <!-- Board Area -->
-        <div class="flex-1 w-full flex justify-center">
-            <div class="board-container">
-                <div id="board" class="ludo-grid"></div>
-                <div id="tokens-layer"></div>
-            </div>
+    <div
+      id="game-screen"
+      class="hidden w-full max-w-5xl flex flex-col lg:flex-row gap-8 items-center justify-center"
+    >
+      <!-- Board Area -->
+      <div class="flex-1 w-full flex justify-center">
+        <div class="board-container">
+          <div id="board" class="ludo-grid"></div>
+          <div id="tokens-layer"></div>
+        </div>
+      </div>
+
+      <!-- Controls Area -->
+      <div
+        class="w-full lg:w-72 bg-[#09090b] border border-[#27272a] p-6 rounded-2xl shadow-2xl flex flex-col items-center"
+      >
+        <div
+          id="turn-card"
+          class="w-full p-4 rounded-xl mb-4 text-center bg-black border border-[#333]"
+        >
+          <h2
+            id="turn-indicator"
+            class="text-xl font-black transition-all duration-300 uppercase"
+          >
+            PLAYER TURN
+          </h2>
         </div>
 
-        <!-- Controls Area -->
-        <div class="w-full lg:w-72 bg-[#09090b] border border-[#27272a] p-6 rounded-2xl shadow-2xl flex flex-col items-center">
-            <div id="turn-card" class="w-full p-4 rounded-xl mb-4 text-center bg-black border border-[#333]">
-                <h2 id="turn-indicator" class="text-xl font-black transition-all duration-300 uppercase">PLAYER TURN</h2>
-            </div>
-            
-            <p id="game-log" class="text-sm text-slate-500 mb-6 text-center h-12 italic">Initializing...</p>
+        <p
+          id="game-log"
+          class="text-sm text-slate-500 mb-6 text-center h-12 italic"
+        >
+          Initializing...
+        </p>
 
-            <button id="dice-btn" class="dice-btn w-full py-6 rounded-2xl shadow-xl mb-6 flex flex-col items-center gap-4 group" onclick="handleDiceClick()">
-                <div id="dice-visual" class="dice-face group-hover:border-white transition-colors">
-                    <div class="dot hidden"></div><div class="dot hidden"></div><div class="dot hidden"></div>
-                    <div class="dot hidden"></div><div class="dot"></div><div class="dot hidden"></div>
-                    <div class="dot hidden"></div><div class="dot hidden"></div><div class="dot hidden"></div>
-                </div>
-                <span class="font-black text-xs tracking-widest text-slate-400 group-hover:text-white">ROLL SYSTEM</span>
-            </button>
+        <button
+          id="dice-btn"
+          class="dice-btn w-full py-6 rounded-2xl shadow-xl mb-6 flex flex-col items-center gap-4 group"
+          onclick="handleDiceClick()"
+        >
+          <div
+            id="dice-visual"
+            class="dice-face group-hover:border-white transition-colors"
+          >
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+            <div class="dot"></div>
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+            <div class="dot hidden"></div>
+          </div>
+          <span
+            class="font-black text-xs tracking-widest text-slate-400 group-hover:text-white"
+            >ROLL SYSTEM</span
+          >
+        </button>
 
-                <button id="menu-btn"
-                onclick="togglePause()"
-                class="w-full mb-4 bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
-                    ⚙ MENU
-                </button>
+        <button
+          id="menu-btn"
+          onclick="togglePause()"
+          class="w-full mb-4 bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all"
+        >
+          ⚙ MENU
+        </button>
 
-            <!-- Rankings -->
-            <div class="w-full bg-[#050505] border border-[#27272a] rounded-xl p-4">
-                <h3 class="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-[#222] pb-2 mb-3">Leaderboard</h3>
-                <ul id="rankings-list" class="text-sm space-y-2">
-                    <li class="italic text-slate-700">Arena empty.</li>
-                </ul>
-            </div>
+        <!-- Rankings -->
+        <div class="w-full bg-[#050505] border border-[#27272a] rounded-xl p-4">
+          <h3
+            class="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-[#222] pb-2 mb-3"
+          >
+            Leaderboard
+          </h3>
+          <ul id="rankings-list" class="text-sm space-y-2">
+            <li class="italic text-slate-700">Arena empty.</li>
+          </ul>
         </div>
+      </div>
     </div>
 
     <!-- Screen 3: Result -->
-    <div id="result-screen" class="hidden w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-3xl shadow-2xl text-center">
-        <div class="mb-4 flex justify-center">
-            <svg class="w-20 h-20 text-yellow-400 filter drop-shadow-[0_0_10px_#facc15]" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
+    <div
+      id="result-screen"
+      class="hidden w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-3xl shadow-2xl text-center"
+    >
+      <div class="mb-4 flex justify-center">
+        <svg
+          class="w-20 h-20 text-yellow-400 filter drop-shadow-[0_0_10px_#facc15]"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+          />
+        </svg>
+      </div>
+      <h1 class="text-4xl font-black text-white mb-2 uppercase">VICTORY</h1>
+      <p class="text-slate-500 mb-8 uppercase tracking-widest text-xs">
+        Battle Finalized
+      </p>
+      <div id="final-rankings" class="space-y-3 mb-8"></div>
+      <button
+        onclick="location.reload()"
+        class="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-colors"
+      >
+        NEW SIMULATION
+      </button>
+    </div>
+
+    <script src="script.js" defer></script>
+    <script src="controller.js" defer></script>
+    <script src="online.js" defer></script>
+    <div
+      id="settings-modal"
+      class="hidden fixed inset-0 z-[60] flex items-center justify-center"
+    >
+      <div class="settings-backdrop"></div>
+
+      <div class="settings-panel">
+        <h2>GAME SETTINGS</h2>
+
+        <div class="settings-section">
+          <h3>🎨 VISUAL</h3>
+
+          <label
+            ><span>Turn Aura</span>
+            <input id="turn-aura-setting" type="checkbox" checked />
+          </label>
+
+          <label
+            ><span>Token Trail</span>
+            <input id="trail-setting" type="checkbox" checked />
+          </label>
+
+          <label
+            ><span>Particles</span>
+            <input id="particles-setting" type="checkbox" checked />
+          </label>
+
+          <label
+            ><span>Capture FX</span>
+            <input id="capture-setting" type="checkbox" checked />
+          </label>
+
+          <label
+            ><span>Winner Celebration</span>
+            <input id="winner-setting" type="checkbox" checked />
+          </label>
         </div>
-        <h1 class="text-4xl font-black text-white mb-2 uppercase">VICTORY</h1>
-        <p class="text-slate-500 mb-8 uppercase tracking-widest text-xs">Battle Finalized</p>
-        <div id="final-rankings" class="space-y-3 mb-8"></div>
-        <button onclick="location.reload()" class="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-colors">
-            NEW SIMULATION
-        </button>
+
+        <hr class="settings-divider" />
+
+        <div class="settings-section">
+          <h3>🔊 AUDIO</h3>
+
+          <div class="setting-slider">
+            <span>Master Volume</span>
+            <input
+              id="master-volume"
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            />
+          </div>
+
+          <div class="setting-slider">
+            <span>Music</span>
+            <input
+              id="music-volume"
+              type="range"
+              min="0"
+              max="100"
+              value="80"
+            />
+          </div>
+
+          <div class="setting-slider">
+            <span>Effects</span>
+            <input
+              id="effects-volume"
+              type="range"
+              min="0"
+              max="100"
+              value="100"
+            />
+          </div>
+
+          <label>
+            <span>Background Music</span>
+            <input id="bg-music-setting" type="checkbox" checked />
+          </label>
+
+          <label>
+            <span>Sound Effects</span>
+            <input id="sound-setting" type="checkbox" checked />
+          </label>
+        </div>
+
+        <button id="close-settings-btn">CLOSE</button>
+      </div>
     </div>
+    <div
+      id="pause-screen"
+      class="hidden fixed inset-0 flex items-center justify-center z-50"
+    >
+      <div class="pause-backdrop"></div>
 
-    <script src="script.js?v=24" defer></script>
-    <script src="controller.js?v=24" defer></script>
-    <div id="settings-modal"
-     class="hidden fixed inset-0 z-[60] flex items-center justify-center">
-
-    <div class="settings-backdrop"></div>
-
-    <div class="settings-panel">
-<h2>GAME SETTINGS</h2>
-
-<div class="settings-section">
-
-    <h3>🎨 VISUAL</h3>
-
-    <label><span>Turn Aura</span>
-    <input id="turn-aura-setting" type="checkbox" checked>
-    </label>
-
-    <label><span>Token Trail</span>
-    <input id="trail-setting" type="checkbox" checked>
-    </label>
-
-    <label><span>Particles</span>
-    <input id="particles-setting" type="checkbox" checked>
-    </label>
-
-    <label><span>Capture FX</span>
-    <input id="capture-setting" type="checkbox" checked>
-    </label>
-
-    <label><span>Winner Celebration</span>
-    <input id="winner-setting" type="checkbox" checked>
-    </label>
-
-</div>
-
-<hr class="settings-divider">
-
-<div class="settings-section">
-
-    <h3>🔊 AUDIO</h3>
-
-    <div class="setting-slider">
-        <span>Master Volume</span>
-        <input
-    id="master-volume"
-    type="range"
-    min="0"
-    max="100"
-    value="100">
-    </div>
-
-    <div class="setting-slider">
-        <span>Music</span>
-        <input
-    id="music-volume"
-    type="range"
-    min="0"
-    max="100"
-    value="80">
-    </div>
-
-    <div class="setting-slider">
-        <span>Effects</span>
-        <input
-    id="effects-volume"
-    type="range"
-    min="0"
-    max="100"
-    value="100">
-    </div>
-
-    <label>
-        <span>Background Music</span>
-        <input id="bg-music-setting" type="checkbox" checked>
-    </label>
-
-    <label>
-        <span>Sound Effects</span>
-        <input id="sound-setting" type="checkbox" checked>
-    </label>
-
-</div>
-
-<button id="close-settings-btn">
-    CLOSE
-</button>
-
-    </div>
-
-</div>
-<div id="pause-screen" class="hidden fixed inset-0 flex items-center justify-center z-50">
-
-    <div class="pause-backdrop"></div>
-
-    <div class="pause-panel">
-
+      <div class="pause-panel">
         <h2>GAME PAUSED</h2>
 
         <div class="pause-buttons">
+          <button
+            id="pause-resume-btn"
+            class="pause-btn resume"
+            onclick="togglePause()"
+          >
+            ▶ RESUME
+          </button>
 
-            <button id='pause-resume-btn' class="pause-btn resume" onclick="togglePause()">
-                ▶ RESUME
-            </button>
+          <button
+            id="pause-settings-btn"
+            class="pause-btn pause-settings-btn"
+            onclick="openSettingsFromPause()"
+          >
+            ⚙ SETTINGS
+          </button>
 
-            <button id="pause-settings-btn" class="pause-btn pause-settings-btn" onclick="openSettingsFromPause()">
-                ⚙ SETTINGS
-            </button>
+          <button
+            id="pause-restart-btn"
+            class="pause-btn pause-restart-btn"
+            onclick="location.reload()"
+          >
+            ↻ RESTART MATCH
+          </button>
 
-            <button id="pause-restart-btn" class="pause-btn pause-restart-btn" onclick="location.reload()">
-                ↻ RESTART MATCH
-            </button>
-
-            <button id="pause-exit-btn" class="pause-btn pause-exit-btn" onclick="exitToMenu()">
-                🏠 EXIT TO MENU
-            </button>
-
+          <button
+            id="pause-exit-btn"
+            class="pause-btn pause-exit-btn"
+            onclick="exitToMenu()"
+          >
+            🏠 EXIT TO MENU
+          </button>
         </div>
-
+      </div>
     </div>
 
-</div>
-
-<div id="controller-toast"
-     class="controller-toast">
-
-    <span id="controller-toast-icon">🎮</span>
-    <div class="controller-toast-content">
+    <div id="controller-toast" class="controller-toast">
+      <span id="controller-toast-icon">🎮</span>
+      <div class="controller-toast-content">
         <div id="controller-toast-title"></div>
         <div id="controller-toast-subtitle"></div>
+      </div>
     </div>
 
-</div>
-
-</body>
+    <div id="online-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/80"></div>
+      <div class="relative w-full max-w-md rounded-2xl border border-cyan-400/60 bg-[#09090b] p-7 shadow-[0_0_40px_rgba(34,211,238,.2)]">
+        <button id="close-online-btn" class="absolute right-4 top-3 text-zinc-400 hover:text-white" aria-label="Close online multiplayer">✕</button>
+        <h2 class="text-2xl font-black tracking-tight text-white">ONLINE ARENA</h2>
+        <p class="mt-2 text-sm text-zinc-400">Create a private room or join a friend using their room code.</p>
+        <button id="create-room-btn" class="mt-6 w-full rounded-xl bg-cyan-400 py-3 font-black text-black transition hover:bg-cyan-300">CREATE ROOM</button>
+        <div class="my-5 flex items-center gap-3 text-xs text-zinc-600"><span class="h-px flex-1 bg-zinc-800"></span>OR<span class="h-px flex-1 bg-zinc-800"></span></div>
+        <label class="block text-xs font-bold tracking-widest text-zinc-400" for="room-code-input">ROOM CODE</label>
+        <input id="room-code-input" maxlength="6" autocomplete="off" placeholder="ABCD23" class="mt-2 w-full rounded-xl border border-zinc-700 bg-black p-3 text-center font-mono text-xl font-black tracking-[.25em] text-white uppercase outline-none focus:border-cyan-400" />
+        <button id="join-room-btn" class="mt-3 w-full rounded-xl border border-cyan-400 py-3 font-black text-cyan-200 transition hover:bg-cyan-400/10">JOIN ROOM</button>
+        <p id="online-status" class="mt-4 min-h-5 text-center text-sm text-zinc-400" aria-live="polite"></p>
+      </div>
+    </div>
+  </body>
 </html>
