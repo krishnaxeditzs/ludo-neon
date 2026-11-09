@@ -49,30 +49,16 @@ const sounds = {
     step: new Audio("sounds/step.mp3"),
     cut: new Audio("sounds/cut.mp3"),
     win: new Audio("sounds/win.mp3")
-};let masterVolume = 1;
- let musicVolume = 0.4;
- let effectsVolume = 1;
+};
 
-// ================== TURN TIMER ==================
-const TURN_DURATION = 40; // seconds
-let turnTimerInterval = null;
-let turnTimerStart = 0;
-let turnTimerDeadline = 0;
-let timerRunning = false;
-let currentTurnId = 0;
-nfunction startTurnTimer() {
-    if (timerRunning) return;
-    timerRunning = true;
-    currentTurnId = Date.now();
-    turnTimerStart = Date.now();
-    turnTimerDeadline = turnTimerStart + TURN_DURATION * 1000;
-    updateTimerDisplay(TURN_DURATION);
-    
-    // Update perimeter animationn    const perimeter = document.getElementById('perimeter-rect');    if (perimeter) {        perimeter.style.strokeDasharray = '287.2';        perimeter.style.strokeDashoffset = '0';    }        turnTimerInterval = setInterval(() => {        const now = Date.now();        const remaining = Math.max(0, Math.ceil((turnTimerDeadline - now) / 1000));                if (remaining <= 0) {            clearInterval(turnTimerInterval);            turnTimerInterval = null;            timerRunning = false;                        // Timeout - skip turnn            handleTurnTimeout();            return;        }                updateTimerDisplay(remaining);                // Update perimeter dash offset (proportional to remaining time)        const progress = (TURN_DURATION - remaining) / TURN_DURATION;        const offset = 287.2 * progress;        if (perimeter) {            perimeter.style.strokeDashoffset = offset + 'px';        }                // Update colour based on remaining timen        const textEl = document.getElementById('timer-countdown');        if (textEl) {            if (remaining > 20) {                textEl.style.color = '#34d399'; // Greenn            } else if (remaining > 10) {                textEl.style.color = '#f59e0b'; // Yellown            } else {                textEl.style.color = '#f87171'; // Redn            }        }    }, 1000);}
-nfunction updateTimerDisplay(seconds) {    const textEl = document.getElementById('timer-countdown');    if (textEl) {        textEl.textContent = `${seconds}s`;    }}
-nfunction handleTurnTimeout() {    // Notify server and skip turn    if (window.LudoOnline && LudoOnline.active) {        emitAck('turn-timeout', {}).catch(() => {});    } else {        // Single player - skip immediately        skipTurn();    }}
-nfunction skipTurn() {    // Reset timer    if (turnTimerInterval) {        clearInterval(turnTimerInterval);        turnTimerInterval = null;    }    timerRunning = false;        // Advance to next player    if (window.LudoOnline && LudoOnline.active) {        // Online: let server handle turn change        emitAck('next-turn', {}).catch(() => {});    } else {        // Single/local - advance locally        const turnInd = document.getElementById('turn-indicator');        if (turnInd) {            turnInd.innerText = '';        }        startTurn();    }}
-nwindow.addEventListener("DOMContentLoaded", () => {    const master = document.getElementById("master-volume");    const timerCountdownEl = document.getElementById('timer-countdown');    const music = document.getElementById("music-volume");
+let masterVolume = 1;
+let musicVolume = 0.4;
+let effectsVolume = 1;
+
+window.addEventListener("DOMContentLoaded", () => {
+
+    const master = document.getElementById("master-volume");
+    const music = document.getElementById("music-volume");
     const effects = document.getElementById("effects-volume");
     const bgMusicToggle = document.getElementById("bg-music-setting");
 const soundToggle = document.getElementById("sound-setting");
@@ -741,13 +727,14 @@ function startMotion(token){
             extraTurnGranted = false;
             currentDice = 0;
             state = 'waiting';
+            // Initialize dice face immediately so it's never blank on turn start
+            showDiceValue(1);
             const turnInd = document.getElementById('turn-indicator');
             turnInd.innerText = `${playerLabel(cp)} TURN`;
             turnInd.parentElement.style.borderColor = HEX[cp.color];
             turnInd.style.color = HEX[cp.color];
             turnInd.style.textShadow = `0 0 10px ${HEX[cp.color]}55`;
-                        // Initialize dice face immediately so it's never blank on start
-            showDiceValue(1);
+            
             const btn = document.getElementById('dice-btn');
             btn.disabled = false;
             if (cp.type === 'ai') {

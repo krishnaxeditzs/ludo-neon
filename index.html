@@ -194,25 +194,8 @@
 
             <p id="game-log" class="text-sm text-slate-500 mb-6 text-center h-12 italic">Initializing...</p>
 
-            <button id="dice-btn" class="dice-btn w-full py-6 rounded-2xl shadow-xl relative mb-6 flex flex-col items-center gap-4 group" onclick="handleDiceClick()">
-                <!-- 40-second turn timer perimeter SVG -->
-                <svg class="timer-perimeter absolute inset-0 pointer-events-none" viewBox="0 0 100 100" aria-label="Turn timer">
-                    <rect
-                        x="10"
-                        y="10"
-                        width="80"
-                        height="80"
-                        rx="16"
-                        ry="16"
-                        stroke="currentColor"
-                        stroke-width="8"
-                        fill="none"
-                        stroke-dasharray="287.2"
-                        stroke-dashoffset="0"
-                        id="perimeter-rect"
-                    />
-                </svg>
-                <div id="dice-visual" class="dice-face group-hover:border-white transition-colors relative z-10">
+            <button id="dice-btn" class="dice-btn w-full py-6 rounded-2xl shadow-xl mb-6 flex flex-col items-center gap-4 group" onclick="handleDiceClick()">
+                <div id="dice-visual" class="dice-face group-hover:border-white transition-colors">
                     <div class="dot hidden"></div><div class="dot hidden"></div><div class="dot hidden"></div>
                     <div class="dot hidden"></div><div class="dot"></div><div class="dot hidden"></div>
                     <div class="dot hidden"></div><div class="dot hidden"></div><div class="dot hidden"></div>
