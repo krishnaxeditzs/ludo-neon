@@ -1,4 +1,4 @@
-const CACHE_NAME = "ludo-neon-v26";
+const CACHE_NAME = "ludo-neon-v27";
 
 const FILES_TO_CACHE = [
   "./",

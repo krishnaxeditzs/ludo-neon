@@ -31,7 +31,7 @@ Other useful commands:
 ```bash
 npm run dev          # backend with auto-restart (node --watch)
 npm run serve        # optional static-only frontend server on :5173
-npm test             # 26 automated rule / engine / room / sync tests
+npm test             # 27 automated rule / engine / room / sync tests
 ```
 
 ### Test online play on one machine
@@ -141,9 +141,12 @@ browser B ─┘                       └─ validation + rate limits
   animate it. Base tokens are included in the legal-move count.
 * If a roll has no legal move (or three sixes), the server auto-ends the turn
   after a short delay.
-* Online dice reuse the original roll animation. The rolling client starts a
-  preview immediately, the server supplies the result, and all clients settle
-  on the same value before state advances; reduced-motion users skip the spin.
+* Online dice reuse the original roll animation: an immediate visual preview,
+  eight random faces at ~30 ms intervals, the authoritative value, then the
+  original 220 ms hold. The rolling client starts the preview immediately, the
+  server supplies the result, and all clients settle on the same value before
+  state advances; reduced-motion users skip the spin. Dice and move broadcasts
+  are deduplicated by revision so a repeated event cannot replay an animation.
 * `revision` increases on every mutation, so stale/replayed actions and
   out-of-order snapshots are detected and ignored. The client also ignores
   lower-revision snapshots and queues newer ones while an animation is running.
@@ -168,9 +171,32 @@ mouse/touch listeners are unchanged. Hidden controls and disabled start buttons
 are excluded from the focus list.
 
 **Always Six:** Y toggles the original offline cheat with an on-screen ON/OFF
-notice. It sets `window.debugForcedDice` only for the local dice engine. Online
-rolls never read that variable; the server owns the dice, so Y is rejected with
-a clear “offline modes only” message during an online match.
+notice. While ON, every **controller** dice roll in Single Player and Local
+Multiplayer is forced to six through `window.debugForcedDice`; turning it off
+clears the pending value. Online rolls never read that variable; the server
+owns the dice, so Y is rejected with a clear “offline modes only” message during
+an online match.
+
+### Haptics and feedback
+
+The original controller haptics are reused unchanged in Single, Local and
+Online play: menu `0.12/0.05/18 ms`, toggle-on `0.30/0.18/40`, toggle-off
+`0.18/0.10/28`, pause `0.55/0.30/90`, resume `0.30/0.15/45`, dice
+`0.65/0.35/170`, step `0.28/0.20/45`, leave-base `0.45/0.25/80`, capture
+`0.40/0.45/220`, home `0.55/0.40/120`, game-start `0.95/0.75/280`. The
+three-stage victory pattern is `0.40/0.90/150` immediately, `0.60/0.40/150`
+after 220 ms, and `1.00/1.00/280` after 470 ms. The actuator is feature-detected;
+unsupported devices log one diagnostic instead of silently failing.
+
+Mobile vibration keeps the original `navigator.vibrate` patterns: step
+`[30,20,30]`, move `[80,40,80]`, dice `[100,50,100,50,120]`, capture
+`[150,70,150]`, win `[200,100,200,100,300]`. Online dice, steps, base exits,
+captures and home/win events trigger the same feedback for every client. Support
+is feature-detected, rejected requests are logged once, and duplicate socket
+events are ignored by revision.
+
+Victory haptics are emitted by the home animation, not repeated by the result
+screen or the `player-won` event.
 
 ### Disconnection & reconnection
 
@@ -296,12 +322,14 @@ GitHub Pages **cannot** run the Socket.IO server. Use it only for static files.
 
 ## 6. Testing
 
-Automated (`npm test`, 26 tests):
+Automated (`npm test`, 27 tests):
 
 * Rules: base escape, 6/1 extra roll, no-move turn pass, capture, safe zones,
   exact home, win/ranks, three sixes, ownership/phase validation, forfeit.
 * Server engine: automatic single legal move (including base tokens), zero and
   multiple legal moves, capture/extra-turn preservation, stale replay rejection.
+  The online suite also verifies a socket-level base-token automatic move and
+  its broadcast to the other client.
 * Online: create/join, invalid code, duplicate name, full room, host-only start,
   deterministic dice + move sync, spoofed dice payload rejection, auto-move sync,
   replay rejection, host migration, reconnection token validation, mid-match
@@ -317,6 +345,10 @@ Manually verified in the browser (two sessions):
 Not visually verified: the online victory/Play-Again screen (server rematch is
 tested), phones/tablets at narrow widths (responsive CSS added, not viewed),
 and a 4-player online match (2-player tested; 5th-join rejection tested).
+A physical controller and a real Android device were not available in this
+development environment; controller/gamepad and vibration paths were exercised
+with browser API stubs, not physical hardware. Real-device vibration and rumble
+remain a manual acceptance check.
 
 ### Manual 2–4 player checklist
 

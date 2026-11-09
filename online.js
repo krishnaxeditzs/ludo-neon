@@ -37,7 +37,10 @@
         animationEpoch: 0,
         pendingResults: null,
         dicePreviewTimer: null,
-        dicePreviewSafety: null
+        dicePreviewSafety: null,
+        lastDiceRevision: -1,
+        lastMoveRevision: -1,
+        resultsRevision: -1
     };
 
     /* ------------------------------ helpers ------------------------------ */
@@ -232,12 +235,21 @@
 
         socket.on("dice-rolled", (payload) => {
             if (!payload || !payload.state) return;
+            const revision = payload.state.revision;
+            if (Number.isInteger(revision) && revision === Online.lastDiceRevision) return;
+            if (Number.isInteger(revision)) Online.lastDiceRevision = revision;
+
             stopDicePreview();
             Online.diceLocked = true;
+            const isRoller = !!Online.you && payload.playerId === Online.you.id;
             enqueueAnimation(async (epoch) => {
                 Online.animating = true;
                 try {
                     playSound("dice");
+                    if (!isRoller) {
+                        vibrate("dice");
+                        if (typeof Haptics !== "undefined") Haptics.dice();
+                    }
                     await animateDiceRoll(payload.dice);
                     const name = (payload.playerName || payload.color || "Player").toUpperCase();
                     if (payload.dice === 0) {
@@ -266,6 +278,9 @@
 
         socket.on("token-moved", (payload) => {
             if (!payload || !payload.state) return;
+            const revision = payload.state.revision;
+            if (Number.isInteger(revision) && revision === Online.lastMoveRevision) return;
+            if (Number.isInteger(revision)) Online.lastMoveRevision = revision;
             enqueueAnimation(async (epoch) => {
                 Online.animating = true;
                 Online.movePending = true;
@@ -314,7 +329,6 @@
         socket.on("player-won", (payload) => {
             if (!payload || !payload.winner) return;
             toast(`${payload.winner.name} wins!`);
-            if (typeof Haptics !== "undefined") Haptics.victory();
         });
 
         socket.on("game-over", (payload) => {
@@ -362,16 +376,20 @@
     }
 
     function startDicePreview() {
-        if (reducedMotion() || Online.dicePreviewTimer) return;
+        if (Online.dicePreviewTimer || Online.dicePreviewSafety) return;
         const diceEl = $("dice-visual");
-        if (!diceEl) return;
-        const dots = diceEl.querySelectorAll(".dot");
-        diceEl.classList.remove("roll-animation");
-        void diceEl.offsetWidth;
-        diceEl.classList.add("roll-animation");
-        Online.dicePreviewTimer = setInterval(() => {
+
+        if (!reducedMotion() && diceEl) {
+            const dots = diceEl.querySelectorAll(".dot");
+            diceEl.classList.remove("roll-animation");
+            void diceEl.offsetWidth;
+            diceEl.classList.add("roll-animation");
             renderDice(randomDiceFace(0), dots, DICE_FACES);
-        }, 70);
+            Online.dicePreviewTimer = setInterval(() => {
+                renderDice(randomDiceFace(0), dots, DICE_FACES);
+            }, 30);
+        }
+
         Online.dicePreviewSafety = setTimeout(() => {
             stopDicePreview();
             Online.diceLocked = false;
@@ -413,7 +431,7 @@
             await sleep(30);
         }
         showDiceValue(value);
-        await sleep(160);
+        await sleep(220);
         diceEl.classList.remove("roll-animation");
     }
 
@@ -964,6 +982,9 @@
     }
 
     function showOnlineResults(gs) {
+        const revision = gs && Number.isInteger(gs.revision) ? gs.revision : -1;
+        if (revision >= 0 && revision === Online.resultsRevision) return;
+        Online.resultsRevision = revision;
         Online.active = true;
         Online.pendingResults = null;
         show("game-screen", false);
@@ -991,8 +1012,6 @@
 
         refreshResultActions();
         playSound("win");
-        vibrate("win");
-        if (typeof Haptics !== "undefined") Haptics.victory();
         if (Online.room) Online.room.status = "finished";
     }
 
@@ -1035,18 +1054,21 @@
             token.relPos = 0;
             playSound("move");
             vibrate("move");
+            if (typeof Haptics !== "undefined") Haptics.leaveBase();
             updateTokenVisuals();
             await sleep(320);
         } else {
             startMotion(token);
+            vibrate("move");
             for (let i = 0; i < move.path.length; i++) {
                 token.relPos = move.path[i];
                 if (token.relPos > 50) token.state = "home";
                 playSound("step");
                 vibrate("step");
+                if (typeof Haptics !== "undefined") Haptics.step();
                 createTrail(token);
                 updateTokenVisuals();
-                await sleep(160);
+                await sleep(170);
             }
             stopMotion(token);
         }
@@ -1065,10 +1087,11 @@
             }
             playSound("cut");
             vibrate("cut");
+            if (typeof Haptics !== "undefined") Haptics.capture();
             const mover = (event.playerName || event.color || "Player").toUpperCase();
             logMsg(`${mover} captured ${move.captures.length} token(s)!`);
             updateTokenVisuals();
-            await sleep(480);
+            await sleep(800);
         }
 
         if (move.reachedHome) {
@@ -1078,8 +1101,12 @@
             }
             playSound("win");
             vibrate("win");
+            if (typeof Haptics !== "undefined") {
+                Haptics.victory();
+                Haptics.home();
+            }
             logMsg(`${(event.playerName || event.color || "Player").toUpperCase()} reached home!`);
-            await sleep(400);
+            await sleep(800);
         }
 
         token.el.style.zIndex = "";
@@ -1097,6 +1124,9 @@
         Online.pendingResults = null;
         Online.movePending = false;
         Online.diceLocked = false;
+        Online.lastDiceRevision = -1;
+        Online.lastMoveRevision = -1;
+        Online.resultsRevision = -1;
 
         show("setup-screen", false);
         show("lobby-screen", false);
@@ -1115,6 +1145,7 @@
         showDiceValue(gs.state === "awaiting-move" ? gs.dice : 0);
         updateConnectionUI();
 
+        if (!opts.resumed && typeof Haptics !== "undefined") Haptics.startGame();
         bgMusic.play().catch(() => {});
         if (opts.restarted) logMsg("New match started.");
         if (opts.resumed) logMsg("Reconnected — game restored.");
@@ -1132,6 +1163,9 @@
         Online.pendingResults = null;
         Online.movePending = false;
         Online.diceLocked = false;
+        Online.lastDiceRevision = -1;
+        Online.lastMoveRevision = -1;
+        Online.resultsRevision = -1;
         Online.gameState = null;
         Online.room = null;
         Online.you = null;
@@ -1174,6 +1208,7 @@
             return;
         }
         Online.diceLocked = true;
+        vibrate("dice");
         updateDiceAvailability(gs);
         startDicePreview();
         emitAck("roll-dice", {})
@@ -1183,6 +1218,22 @@
                     Online.diceLocked = false;
                     updateDiceAvailability(Online.gameState);
                     if (response) toast(response.error || "Roll rejected.", "error");
+                    return;
+                }
+
+                // If the room broadcast is lost, never leave the board locked.
+                if (response.state) {
+                    setTimeout(() => {
+                        if (
+                            Online.diceLocked &&
+                            Online.gameState &&
+                            response.state.revision > Online.gameState.revision
+                        ) {
+                            stopDicePreview();
+                            Online.diceLocked = false;
+                            applyServerState(response.state, { force: true });
+                        }
+                    }, 2500);
                 }
             })
             .catch((err) => {

@@ -213,6 +213,41 @@ test("server auto-executes one legal move and ignores spoofed dice", async () =>
     bob.close();
 });
 
+test("a single legal base move is executed automatically", async () => {
+    const alice = await connect();
+    const bob = await connect();
+
+    const created = await request(alice, "create-room", { name: "Base Alice" });
+    await request(bob, "join-room", { code: created.code, name: "Base Bob" });
+    await request(alice, "start-game", {});
+
+    const room = manager.getRoom(created.code);
+    room.game.forcedDice = 6;
+    const redTokens = room.game.game.tokens.filter((t) => t.color === created.you.color);
+    redTokens.slice(0, 3).forEach((t) => {
+        t.state = "home";
+        t.relPos = 56;
+    });
+    const baseToken = redTokens[3];
+
+    const diceEvent = waitFor(bob, "dice-rolled");
+    const rolled = await request(alice, "roll-dice", {});
+    const event = await diceEvent;
+
+    assert.equal(rolled.ok, true);
+    assert.equal(event.dice, 6);
+    assert.equal(event.autoMove.tokenId, baseToken.id);
+    assert.equal(event.autoMove.move.from.state, "base");
+    assert.equal(event.autoMove.move.to.state, "track");
+    assert.equal(event.autoMove.move.to.relPos, 0);
+    assert.equal(event.state.revision, 2);
+    assert.equal(event.state.turnPlayerId, created.you.id, "the six grants another roll");
+
+    await request(alice, "leave-room", {});
+    alice.close();
+    bob.close();
+});
+
 test("disconnect, host migration and reconnection restore the seat", async () => {
     const alice = await connect();
     const bob = await connect();

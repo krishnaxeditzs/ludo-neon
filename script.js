@@ -176,32 +176,45 @@ function playSound(type, token = null) {
     }
 
 // ================== VIBRATION ==================
+let vibrationNoticeShown = false;
+
+function vibrationPattern(type) {
+    switch(type) {
+        case 'step': return [30, 20, 30];       // light pulse
+        case 'move': return [80, 40, 80];       // medium strong
+        case 'dice': return [100, 50, 100, 50, 120]; // rolling feel
+        case 'cut': return [150, 70, 150];      // 💥 strong hit
+        case 'win': return [200, 100, 200, 100, 300]; // 🏆 very strong
+        default: return null;
+    }
+}
+
 function vibrate(type) {
-    if (!("vibrate" in navigator)) return;
+    const pattern = vibrationPattern(type);
+    if (!pattern) return false;
+
+    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
+        if (!vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] navigator.vibrate is unavailable on this device/browser.");
+        }
+        return false;
+    }
 
     try {
-        switch(type) {
-            case 'step':
-                navigator.vibrate([30, 20, 30]); // light pulse
-                break;
-
-            case 'move':
-                navigator.vibrate([80, 40, 80]); // medium strong
-                break;
-
-            case 'dice':
-                navigator.vibrate([100, 50, 100, 50, 120]); // rolling feel
-                break;
-
-            case 'cut':
-                navigator.vibrate([150, 70, 150]); // 💥 strong hit
-                break;
-
-            case 'win':
-                navigator.vibrate([200, 100, 200, 100, 300]); // 🏆 very strong
-                break;
+        const started = navigator.vibrate(pattern);
+        if (!started && !vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] The browser ignored the vibration request (permission, user activation, or device policy).");
         }
-    } catch(e) {}
+        return started;
+    } catch (e) {
+        if (!vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] Mobile vibration was rejected:", e);
+        }
+        return false;
+    }
 }
 
 // ================== PAUSE ==================
@@ -548,6 +561,7 @@ function startMotion(token){
 
         window.startGameWithConfig = function(config) {
             if (soundEnabled) bgMusic.play();
+            window.debugForcedDice = null;
             players = []; tokens = [];
             config.forEach(entry => {
                 players.push({
@@ -791,7 +805,6 @@ if (currentDice === 6) {
 
                 playSound("cut");
                 vibrate("cut");
-                Haptics.capture();
 
                 if(typeof Haptics !== "undefined"){
                     Haptics.capture();      // or Haptics.penalty() if you create one
@@ -1020,6 +1033,7 @@ async function executeMove(t) {
                 t.state = 'home';
 
             playSound('step', t);
+            vibrate('step');
 
             if(typeof Haptics !== "undefined"){
                 Haptics.step();

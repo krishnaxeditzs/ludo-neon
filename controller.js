@@ -301,13 +301,24 @@ requestAnimationFrame(updateController);
         CONTROLLER HAPTICS ENGINE
 =========================================*/
 
+let hapticUnavailableLogged = false;
+
 async function rumble(weak, strong, duration){
 
-    if(!gamepad) return;
+    if(!gamepad) return false;
 
     const actuator = gamepad.vibrationActuator;
 
-    if(!actuator) return;
+    if(!actuator || typeof actuator.playEffect !== "function"){
+
+        if(!hapticUnavailableLogged){
+            hapticUnavailableLogged = true;
+            console.info("[Haptics] Controller rumble is unavailable on this device/browser.");
+        }
+
+        return false;
+
+    }
 
     try{
 
@@ -320,8 +331,11 @@ async function rumble(weak, strong, duration){
             strongMagnitude:Math.min(1,Math.max(0,strong))
         });
 
+        return true;
+
     }catch(e){
-        console.log("Rumble failed:",e);
+        console.warn("[Haptics] Controller rumble failed:",e);
+        return false;
     }
 
 }
