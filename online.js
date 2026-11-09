@@ -1042,18 +1042,13 @@
             });
     }
 
-    function handleTokenClick(event) {
-        const el = event.target.closest ? event.target.closest(".token") : null;
-        if (!el) return;
-        event.preventDefault();
-
+    function submitMove(tokenId) {
         const gs = Online.gameState;
         if (!gs || gs.state !== "awaiting-move") return;
         if (!isMyTurn(gs)) {
             toast("Wait for your turn.");
             return;
         }
-        const tokenId = el.id.replace("token-", "");
         if (!(gs.legalTokenIds || []).includes(tokenId)) {
             toast("That token cannot make that move.", "error");
             return;
@@ -1072,6 +1067,13 @@
                 Online.movePending = false;
                 toast(connectionError(err), "error");
             });
+    }
+
+    function handleTokenClick(event) {
+        const el = event.target.closest ? event.target.closest(".token") : null;
+        if (!el) return;
+        event.preventDefault();
+        submitMove(el.id.replace("token-", ""));
     }
 
     function copyRoomCode() {
@@ -1195,6 +1197,7 @@
 
     Online.handleDiceClick = handleDiceClick;
     Online.handleTokenClick = handleTokenClick;
+    Online.submitMove = submitMove;
     Online.leaveRoom = leaveRoom;
     Online.requestRematch = requestRematch;
     Online.resumeRoom = resumeRoom;
