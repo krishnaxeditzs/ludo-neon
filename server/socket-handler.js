@@ -368,6 +368,9 @@ function attachSocketHandlers(io, manager) {
                 });
             });
 
+            // Start the 40-second turn timer (authoritative)
+            engine.startTurnTimer();
+
             room.winnerAnnounced = false;
             io.to(room.code).emit("game-started", {
                 ok: true,

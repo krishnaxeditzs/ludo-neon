@@ -55,6 +55,105 @@ let masterVolume = 1;
 let musicVolume = 0.4;
 let effectsVolume = 1;
 
+// ================== TURN TIMER ==================
+const TURN_DURATION = 40; // seconds
+let turnTimerInterval = null;
+let turnTimerStart = 0;
+let turnTimerDeadline = 0;
+let timerRunning = false;
+let currentTurnId = 0;
+
+function startTurnTimer() {
+    if (timerRunning) return;
+    timerRunning = true;
+    currentTurnId = Date.now();
+    turnTimerStart = Date.now();
+    turnTimerDeadline = turnTimerStart + TURN_DURATION * 1000;
+    updateTimerDisplay(TURN_DURATION);
+    
+    // Update perimeter animation
+    const perimeter = document.getElementById('perimeter-circle');
+    if (perimeter) {
+        perimeter.style.strokeDasharray = '251.2';
+        perimeter.style.strokeDashoffset = '0';
+    }
+    
+    turnTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const remaining = Math.max(0, Math.ceil((turnTimerDeadline - now) / 1000));
+        
+        if (remaining <= 0) {
+            clearInterval(turnTimerInterval);
+            turnTimerInterval = null;
+            timerRunning = false;
+            
+            // Timeout - skip turn
+            handleTurnTimeout();
+            return;
+        }
+        
+        updateTimerDisplay(remaining);
+        
+        // Update perimeter dash offset (full circle = 251.2px, proportional to remaining time)
+        const progress = (TURN_DURATION - remaining) / TURN_DURATION;
+        const offset = 251.2 * progress;
+        if (perimeter) {
+            perimeter.style.strokeDashoffset = offset + 'px';
+        }
+        
+        // Update colour based on remaining time
+        const textEl = document.getElementById('timer-countdown');
+        if (textEl) {
+            if (remaining > 20) {
+                textEl.style.color = '#34d399'; // Green
+            } else if (remaining > 10) {
+                textEl.style.color = '#f59e0b'; // Yellow
+            } else {
+                textEl.style.color = '#f87171'; // Red
+            }
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay(seconds) {
+    const textEl = document.getElementById('timer-countdown');
+    if (textEl) {
+        textEl.textContent = `${seconds}s`;
+    }
+}
+
+function handleTurnTimeout() {
+    // Notify server and skip turn
+    if (window.LudoOnline && LudoOnline.active) {
+        emitAck('turn-timeout', {}).catch(() => {});
+    } else {
+        // Single player - skip immediately
+        skipTurn();
+    }
+}
+
+function skipTurn() {
+    // Reset timer
+    if (turnTimerInterval) {
+        clearInterval(turnTimerInterval);
+        turnTimerInterval = null;
+    }
+    timerRunning = false;
+    
+    // Advance to next player
+    if (window.LudoOnline && LudoOnline.active) {
+        // Online: let server handle turn change
+        emitAck('next-turn', {}).catch(() => {});
+    } else {
+        // Single/local - advance locally
+        const turnInd = document.getElementById('turn-indicator');
+        if (turnInd) {
+            turnInd.innerText = '';
+        }
+        startTurn();
+    }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
 
     const master = document.getElementById("master-volume");
@@ -727,6 +826,8 @@ function startMotion(token){
             extraTurnGranted = false;
             currentDice = 0;
             state = 'waiting';
+            // Initialize dice face immediately so it's never blank on start
+            showDiceValue(1);
             const turnInd = document.getElementById('turn-indicator');
             turnInd.innerText = `${playerLabel(cp)} TURN`;
             turnInd.parentElement.style.borderColor = HEX[cp.color];
@@ -741,6 +842,7 @@ function startMotion(token){
                 await sleep(800);
                 rollDiceLogic();
             } else { logMsg(`Ready to roll.`); }
+            startTurnTimer();
         }
 
             function handleDiceClick(){

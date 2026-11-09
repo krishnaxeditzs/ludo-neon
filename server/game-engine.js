@@ -13,12 +13,18 @@ class GameEngine {
     constructor(players, options = {}) {
         this.game = core.createGame({ players });
         this.autoEndTimer = null;
+        this.turnTimerId = null;
         this.onAutoEnd = null;
         // Server-side convenience: a roll with exactly one legal token move is
         // applied immediately so every client sees one authoritative result.
         this.autoSingleMove = options.autoSingleMove !== false;
         // Test-only injection; never set from network input or env.
         this.forcedDice = Number.isInteger(options.forcedDice) ? options.forcedDice : null;
+        // 40-second turn timer (authoritative)
+        this.turnDuration = 40; // seconds
+        this.turnStartTime = 0;
+        this.turnDeadline = 0;
+        this.currentTurnId = 0;
     }
 
     onAutoEndTurn(fn) {
@@ -45,6 +51,38 @@ class GameEngine {
         if (this.autoEndTimer) {
             clearTimeout(this.autoEndTimer);
             this.autoEndTimer = null;
+        }
+        if (this.turnTimerId) {
+            clearTimeout(this.turnTimerId);
+            this.turnTimerId = null;
+        }
+    }
+
+    startTurnTimer() {
+        this.clearTimer();
+        this.turnStartTime = Date.now();
+        this.turnDeadline = this.turnStartTime + this.turnDuration * 1000;
+        this.currentTurnId = Date.now();
+        this.scheduleTurnTimerBroadcast();
+    }
+
+    scheduleTurnTimerBroadcast() {
+        // Broadcast remaining time every second
+        this.turnTimerId = setInterval(() => {
+            const remaining = Math.max(0, Math.ceil((this.turnDeadline - Date.now()) / 1000));
+            io.to(room.code).emit("turn-timer", {
+                ok: true,
+                remaining,
+                deadline: this.turnDeadline,
+                turnId: this.currentTurnId
+            });
+        }, 1000);
+    }
+
+    clearTurnTimer() {
+        if (this.turnTimerId) {
+            clearInterval(this.turnTimerId);
+            this.turnTimerId = null;
         }
     }
 

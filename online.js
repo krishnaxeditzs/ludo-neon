@@ -303,6 +303,47 @@
             applyServerState(payload.state);
         });
 
+        socket.on("turn-timer", (payload) => {
+            if (!payload || !payload.ok) return;
+            // Ignore stale timers from previous turns
+            if (payload.turnId !== Online.turnTimerId) return;
+            
+            const remaining = payload.remaining;
+            const deadline = payload.deadline;
+            
+            if (remaining <= 0) {
+                // Turn timeout handled server-side
+                if (!Online.animating) {
+                    Online.movePending = false;
+                    Online.diceLocked = false;
+                }
+                return;
+            }
+            
+            // Update the timer display
+            const textEl = document.getElementById('timer-countdown');
+            if (textEl) {
+                textEl.textContent = `${remaining}s`;
+                
+                // Update colour based on remaining time
+                if (remaining > 20) {
+                    textEl.style.color = '#34d399'; // Green
+                } else if (remaining > 10) {
+                    textEl.style.color = '#f59e0b'; // Yellow
+                } else {
+                    textEl.style.color = '#f87171'; // Red
+                }
+            }
+            
+            // Update perimeter animation offset
+            const perimeter = document.getElementById('perimeter-circle');
+            if (perimeter) {
+                const progress = (40 - remaining) / 40;
+                const offset = 251.2 * progress;
+                perimeter.style.strokeDashoffset = offset + 'px';
+            }
+        });
+
         socket.on("player-disconnected", (payload) => {
             if (!payload) return;
             if (payload.room) Online.room = payload.room;
@@ -1148,7 +1189,8 @@
             rebuildBoard(gs);
         }
         applyServerState(gs, { force: true });
-        showDiceValue(gs.state === "awaiting-move" ? gs.dice : 0);
+        // Initialize dice face immediately so it's never blank on any mode
+        showDiceValue(gs.state === "awaiting-move" ? gs.dice : 1);
         updateConnectionUI();
 
         if (!opts.resumed && typeof Haptics !== "undefined") Haptics.startGame();
