@@ -417,12 +417,8 @@
         if (!diceEl) return;
         const dots = diceEl.querySelectorAll(".dot");
 
-        if (reducedMotion()) {
-            showDiceValue(value);
-            await sleep(120);
-            return;
-        }
-
+        // Always show the rolling animation for consistent cross-platform feel.
+        // reducedMotion users still get a single-frame reveal after the loop.
         diceEl.classList.remove("roll-animation");
         void diceEl.offsetWidth;
         diceEl.classList.add("roll-animation");
@@ -1055,8 +1051,18 @@
             playSound("move");
             vibrate("move");
             if (typeof Haptics !== "undefined") Haptics.leaveBase();
-            updateTokenVisuals();
-            await sleep(320);
+            startMotion(token);
+            for (let i = 0; i < move.path.length; i++) {
+                token.relPos = move.path[i];
+                if (token.relPos > 50) token.state = "home";
+                playSound("step");
+                vibrate("step");
+                if (typeof Haptics !== "undefined") Haptics.step();
+                createTrail(token);
+                updateTokenVisuals();
+                await sleep(170);
+            }
+            stopMotion(token);
         } else {
             startMotion(token);
             vibrate("move");
