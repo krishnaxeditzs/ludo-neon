@@ -1,0 +1,26 @@
+{
+  "name": "ludo-neon",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Ludo Neon — single player, local multiplayer and server-authoritative online multiplayer",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "serve": "node server/static-server.js",
+    "test": "node --test tests/",
+    "test:core": "node --test tests/core.test.js",
+    "test:online": "node --test tests/online.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.7.5"
+  }
+}

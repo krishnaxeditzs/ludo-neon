@@ -176,32 +176,45 @@ function playSound(type, token = null) {
     }
 
 // ================== VIBRATION ==================
+let vibrationNoticeShown = false;
+
+function vibrationPattern(type) {
+    switch(type) {
+        case 'step': return [30, 20, 30];       // light pulse
+        case 'move': return [80, 40, 80];       // medium strong
+        case 'dice': return [100, 50, 100, 50, 120]; // rolling feel
+        case 'cut': return [150, 70, 150];      // 💥 strong hit
+        case 'win': return [200, 100, 200, 100, 300]; // 🏆 very strong
+        default: return null;
+    }
+}
+
 function vibrate(type) {
-    if (!("vibrate" in navigator)) return;
+    const pattern = vibrationPattern(type);
+    if (!pattern) return false;
+
+    if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") {
+        if (!vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] navigator.vibrate is unavailable on this device/browser.");
+        }
+        return false;
+    }
 
     try {
-        switch(type) {
-            case 'step':
-                navigator.vibrate([30, 20, 30]); // light pulse
-                break;
-
-            case 'move':
-                navigator.vibrate([80, 40, 80]); // medium strong
-                break;
-
-            case 'dice':
-                navigator.vibrate([100, 50, 100, 50, 120]); // rolling feel
-                break;
-
-            case 'cut':
-                navigator.vibrate([150, 70, 150]); // 💥 strong hit
-                break;
-
-            case 'win':
-                navigator.vibrate([200, 100, 200, 100, 300]); // 🏆 very strong
-                break;
+        const started = navigator.vibrate(pattern);
+        if (!started && !vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] The browser ignored the vibration request (permission, user activation, or device policy).");
         }
-    } catch(e) {}
+        return started;
+    } catch (e) {
+        if (!vibrationNoticeShown) {
+            vibrationNoticeShown = true;
+            console.info("[Haptics] Mobile vibration was rejected:", e);
+        }
+        return false;
+    }
 }
 
 // ================== PAUSE ==================
@@ -249,6 +262,15 @@ function openSettingsFromPause(){
 }
 
 function exitToMenu() {
+    const onlineHud = document.getElementById("online-hud");
+    if (onlineHud) onlineHud.classList.add("hidden");
+    const onlineWait = document.getElementById("online-wait");
+    if (onlineWait) onlineWait.classList.add("hidden");
+    const lobbyScreen = document.getElementById("lobby-screen");
+    if (lobbyScreen) lobbyScreen.classList.add("hidden");
+    if (window.LudoOnline && LudoOnline.active) {
+        LudoOnline.leaveRoom({ silent: true });
+    }
 
     // Close all overlays
     isPaused = false;
@@ -521,23 +543,49 @@ function startMotion(token){
     };
 }
 
-       window.startGame = function() {
-        if (soundEnabled) bgMusic.play();
-            players = []; tokens = [];
+        window.startGame = function() {
+            const config = [];
             COLORS.forEach(color => {
                 const type = document.getElementById(`p-${color}`).value;
                 if (type !== 'none') {
-                    players.push({ color, type, finished: false });
-                    for (let i = 0; i < 4; i++) {
-                        tokens.push({ id: `${color}-${i}`, color, playerIndex: players.length - 1, state: 'base', relPos: -1, el: null });
-                    }
+                    config.push({ color, type, name: color.toUpperCase() });
+                }
+            });
+            if (config.length < 2) {
+                document.getElementById('setup-err').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('setup-err').classList.add('hidden');
+            startGameWithConfig(config);
+        }
+
+        window.startGameWithConfig = function(config) {
+            if (soundEnabled) bgMusic.play();
+            window.debugForcedDice = null;
+            players = []; tokens = [];
+            config.forEach(entry => {
+                players.push({
+                    color: entry.color,
+                    type: entry.type || 'human',
+                    name: entry.name || entry.color.toUpperCase(),
+                    finished: false
+                });
+                for (let i = 0; i < 4; i++) {
+                    tokens.push({ id: `${entry.color}-${i}`, color: entry.color, playerIndex: players.length - 1, state: 'base', relPos: -1, el: null });
                 }
             });
             if (players.length < 2) {
                 document.getElementById('setup-err').classList.remove('hidden');
                 return;
             }
+            document.getElementById('setup-err').classList.add('hidden');
             document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            const onlineHud = document.getElementById('online-hud');
+            if (onlineHud) onlineHud.classList.add('hidden');
+            const onlineWait = document.getElementById('online-wait');
+            if (onlineWait) onlineWait.classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
             generateBoard();
             createTokensDom();
@@ -680,7 +728,7 @@ function startMotion(token){
             currentDice = 0;
             state = 'waiting';
             const turnInd = document.getElementById('turn-indicator');
-            turnInd.innerText = `${cp.color.toUpperCase()} TURN`;
+            turnInd.innerText = `${playerLabel(cp)} TURN`;
             turnInd.parentElement.style.borderColor = HEX[cp.color];
             turnInd.style.color = HEX[cp.color];
             turnInd.style.textShadow = `0 0 10px ${HEX[cp.color]}55`;
@@ -696,6 +744,7 @@ function startMotion(token){
         }
 
             function handleDiceClick(){
+                if (window.LudoOnline && LudoOnline.active) { LudoOnline.handleDiceClick(); return; }
 
                 if(diceLocked)
                     return;
@@ -756,7 +805,6 @@ if (currentDice === 6) {
 
                 playSound("cut");
                 vibrate("cut");
-                Haptics.capture();
 
                 if(typeof Haptics !== "undefined"){
                     Haptics.capture();      // or Haptics.penalty() if you create one
@@ -870,6 +918,7 @@ if (currentDice === 6) {
         }
 
         document.getElementById('tokens-layer').addEventListener('click', (e) => {
+    if (window.LudoOnline && LudoOnline.active) { LudoOnline.handleTokenClick(e); return; }
     if (state !== 'selecting') return;
 
     let el = e.target.closest('.token');
@@ -984,6 +1033,7 @@ async function executeMove(t) {
                 t.state = 'home';
 
             playSound('step', t);
+            vibrate('step');
 
             if(typeof Haptics !== "undefined"){
                 Haptics.step();
@@ -1073,7 +1123,9 @@ async function executeMove(t) {
             const list = document.getElementById('rankings-list');
             list.innerHTML = '';
             ranks.forEach((col, idx) => {
-                list.innerHTML += `<li class="font-black" style="color:${HEX[col]}">${idx + 1}. ${col.toUpperCase()}</li>`;
+                const owner = players.find(p => p.color === col);
+                const label = owner ? playerLabel(owner) : col.toUpperCase();
+                list.innerHTML += `<li class="font-black" style="color:${HEX[col]}">${idx + 1}. ${escapeHtml(label)}</li>`;
             });
         }
 
@@ -1109,11 +1161,15 @@ async function executeMove(t) {
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.remove('hidden');
             const fr = document.getElementById('final-rankings');
-            fr.innerHTML = ranks.map((c, i) => `
+            fr.innerHTML = ranks.map((c, i) => {
+                const owner = players.find(p => p.color === c);
+                const label = owner ? playerLabel(owner) : c.toUpperCase();
+                return `
                 <div class="p-4 bg-black border border-[#333] rounded-xl font-black text-sm tracking-widest" style="color: ${HEX[c]}">
-                    RANK ${i+1}: ${c.toUpperCase()}
+                    RANK ${i+1}: ${escapeHtml(label)}
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         document.querySelectorAll("button").forEach(button => {
@@ -1180,4 +1236,44 @@ function updateTurnAura(){
 
     });
 
+}
+
+
+// ================== MULTIPLAYER HELPERS ==================
+function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+}
+
+function playerLabel(player) {
+    if (!player) return "PLAYER";
+    return String(player.name || player.color || "PLAYER").toUpperCase();
+}
+
+function restartMatch() {
+    if (window.LudoOnline && LudoOnline.active) {
+        isPaused = false;
+        const pause = document.getElementById("pause-screen");
+        if (pause) pause.classList.add("hidden");
+        LudoOnline.leaveRoom({ silent: true });
+        return;
+    }
+    location.reload();
+}
+
+function handleResultPrimary() {
+    if (window.LudoOnline && LudoOnline.active) {
+        LudoOnline.requestRematch();
+        return;
+    }
+    location.reload();
+}
+
+function handleResultSecondary() {
+    if (window.LudoOnline && LudoOnline.active) {
+        LudoOnline.leaveRoom();
+        return;
+    }
+    location.reload();
 }
