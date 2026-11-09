@@ -480,6 +480,20 @@ if(pauseVisible){
 
 }
 
+if (window.LudoOnline && window.LudoOnline.active) {
+
+    if (button === BTN.START) {
+
+        Haptics.pause();
+
+        togglePause();
+
+    }
+
+    return;
+
+}
+
 if(setupVisible){
 
     handleSetupMenu(button);
@@ -625,6 +639,12 @@ if(setupVisible){
 }
 
 function handleSetupMenu(button){
+
+    const singlePanel = document.getElementById("setup-single");
+
+    if (singlePanel && singlePanel.classList.contains("hidden")) {
+        return;
+    }
 
     switch(button){
 

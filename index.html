@@ -3,84 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ludo Game</title>
+    <title>Ludo Neon — Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="manifest.json?v=24">
-        <meta name="theme-color" content="#00ff99">
-    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="manifest" href="manifest.json?v=25">
+    <meta name="theme-color" content="#00ff99">
+    <link rel="stylesheet" href="style.css?v=25">
     <link rel="icon" href="images/icon.svg" />
-    <link rel="preload" as="image" href="images/setup-bg.png" />
-
+    <link rel="preload" as="image" href="images/setup-bg.jpg" />
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
+    <div id="connection-banner" class="connection-banner hidden" role="status" aria-live="polite"></div>
+
     <!-- Screen 1: Setup -->
     <div id="setup-screen" class="w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-        <!-- Update 1 Applied here: Thin White Neon Title -->
-        <h1 class="text-4xl text-center mb-8 tracking-tighter">
-            <span class="font-black text-white">LUDO</span> 
+        <h1 class="text-4xl text-center mb-6 tracking-tighter">
+            <span class="font-black text-white">LUDO</span>
             <span class="neon-title-thin">NEON</span>
         </h1>
-        
-        <div class="space-y-4">
-            <div class="color-card red flex justify-between items-center">
-                <span class="font-bold text-red-400 text-lg">Red Player</span>
-                <select id="p-red" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-red-500">
-                    <option value="human">Human</option>
-                    <option value="ai">AI</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card green flex justify-between items-center">
-                <span class="font-bold text-green-400 text-lg">Green Player</span>
-                <select id="p-green" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-green-500">
-                    <option value="human">Human</option>
-                    <option value="ai">AI</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card blue flex justify-between items-center">
-                <span class="font-bold text-blue-400 text-lg">Blue Player</span>
-                <select id="p-blue" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-blue-500">
-                    <option value="ai">AI</option>
-                    <option value="human">Human</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-            <div class="color-card yellow flex justify-between items-center">
-                <span class="font-bold text-yellow-400 text-lg">Yellow Player</span>
-                <select id="p-yellow" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-yellow-500">
-                    <option value="ai">AI</option>
-                    <option value="human">Human</option>
-                    <option value="none">None</option>
-                </select>
-            </div>
-        </div>
-        
-        <p id="setup-err" class="text-red-400 text-sm mt-4 text-center hidden">Need at least 2 players!</p>
-        <div class="mt-8 space-y-3">
 
+        <!-- Mode tabs -->
+        <div id="mode-tabs" class="mode-tabs" role="tablist" aria-label="Game mode">
+            <button type="button" class="mode-tab active" data-mode="single" role="tab" aria-selected="true">SINGLE</button>
+            <button type="button" class="mode-tab" data-mode="local" role="tab" aria-selected="false">LOCAL</button>
+            <button type="button" class="mode-tab" data-mode="online" role="tab" aria-selected="false">ONLINE</button>
+        </div>
+
+        <!-- Single player (existing setup, unchanged behaviour) -->
+        <div id="setup-single" class="mode-panel">
+            <div class="space-y-4">
+                <div class="color-card red flex justify-between items-center">
+                    <span class="font-bold text-red-400 text-lg">Red Player</span>
+                    <select id="p-red" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-red-500">
+                        <option value="human">Human</option>
+                        <option value="ai">AI</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="color-card green flex justify-between items-center">
+                    <span class="font-bold text-green-400 text-lg">Green Player</span>
+                    <select id="p-green" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-green-500">
+                        <option value="human">Human</option>
+                        <option value="ai">AI</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="color-card blue flex justify-between items-center">
+                    <span class="font-bold text-blue-400 text-lg">Blue Player</span>
+                    <select id="p-blue" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-blue-500">
+                        <option value="ai">AI</option>
+                        <option value="human">Human</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="color-card yellow flex justify-between items-center">
+                    <span class="font-bold text-yellow-400 text-lg">Yellow Player</span>
+                    <select id="p-yellow" class="bg-black border border-zinc-800 text-white rounded-lg p-2 outline-none focus:border-yellow-500">
+                        <option value="ai">AI</option>
+                        <option value="human">Human</option>
+                        <option value="none">None</option>
+                    </select>
+                </div>
+            </div>
+
+            <p id="setup-err" class="text-red-400 text-sm mt-4 text-center hidden">Need at least 2 players!</p>
+            <div class="mt-8 space-y-3">
                 <button id="open-settings-btn"
                     class="w-full bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
                     ⚙ SETTINGS
                 </button>
-
                 <button id="enter-arena" onclick="startGame()"
                     class="w-full bg-white text-black hover:bg-zinc-200 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-widest">
                     ▶ ENTER THE ARENA
-    </button>
+                </button>
+            </div>
+        </div>
 
+        <!-- Local multiplayer -->
+        <div id="setup-local" class="mode-panel hidden">
+            <p class="mp-label">PLAYERS ON THIS DEVICE</p>
+            <div id="local-count-row" class="mp-count-row" role="group" aria-label="Player count">
+                <button type="button" class="mp-count-btn active" data-count="2">2</button>
+                <button type="button" class="mp-count-btn" data-count="3">3</button>
+                <button type="button" class="mp-count-btn" data-count="4">4</button>
+            </div>
+
+            <div id="local-players" class="space-y-3 mt-4"></div>
+
+            <p id="local-err" class="text-red-400 text-sm mt-4 text-center hidden"></p>
+
+            <div class="mt-6 space-y-3">
+                <button id="local-start-btn"
+                    class="w-full bg-white text-black hover:bg-zinc-200 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-widest">
+                    ▶ START LOCAL MATCH
+                </button>
+                <button id="local-settings-btn"
+                    class="w-full bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
+                    ⚙ SETTINGS
+                </button>
+            </div>
+        </div>
+
+        <!-- Online multiplayer -->
+        <div id="setup-online" class="mode-panel hidden">
+            <label class="mp-label" for="online-name">YOUR NAME</label>
+            <input id="online-name" class="mp-input" maxlength="16" placeholder="Player name" autocomplete="nickname" />
+
+            <label class="mp-label" for="online-color">PREFERRED COLOR</label>
+            <select id="online-color" class="mp-input">
+                <option value="">Auto assign</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="yellow">Yellow</option>
+            </select>
+
+            <button id="create-room-btn" type="button" class="mp-primary">＋ CREATE ROOM</button>
+
+            <div class="mp-or"><span>OR JOIN WITH A CODE</span></div>
+
+            <label class="mp-label" for="join-code">ROOM CODE</label>
+            <input id="join-code" class="mp-input mp-code-input" maxlength="6" placeholder="ABC12" autocomplete="off" spellcheck="false" />
+            <button id="join-room-btn" type="button" class="mp-secondary">→ JOIN ROOM</button>
+
+            <p id="online-err" class="text-red-400 text-sm mt-3 text-center hidden"></p>
+
+            <button id="online-resume-btn" type="button" class="mp-secondary hidden">↻ RESUME ROOM</button>
+
+            <p class="mp-hint">Server: <span id="online-server-label">checking…</span></p>
+            <p class="mp-hint mp-hint-soft">Play with 2–4 players on different devices. Rooms expire when empty.</p>
+        </div>
     </div>
-</div>
+
+    <!-- Screen 1b: Online lobby -->
+    <div id="lobby-screen"
+        class="hidden w-full max-w-md bg-[#09090b] border border-[#27272a] p-8 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+        <div class="lobby-code-row">
+            <div>
+                <p class="mp-label mb-1">ROOM CODE</p>
+                <div id="lobby-code" class="lobby-code">-----</div>
+            </div>
+            <button id="copy-code-btn" type="button" class="mp-copy">COPY</button>
+        </div>
+
+        <div id="lobby-status" class="lobby-status">
+            <span class="hud-dot" id="lobby-dot"></span>
+            <span id="lobby-status-text">Connecting…</span>
+        </div>
+
+        <p class="mp-label">PLAYERS <span id="lobby-count" class="mp-count-badge">1/4</span></p>
+        <ul id="lobby-players" class="lobby-players"></ul>
+
+        <p id="lobby-hint" class="mp-hint"></p>
+
+        <div class="mt-6 space-y-3">
+            <button id="lobby-start-btn" type="button"
+                class="w-full bg-white text-black hover:bg-zinc-200 font-black py-4 rounded-xl transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] uppercase tracking-widest hidden">
+                ▶ START MATCH
+            </button>
+            <button id="lobby-leave-btn" type="button"
+                class="w-full bg-[#111] border border-zinc-700 hover:border-red-400 text-white font-bold py-3 rounded-xl transition-all">
+                ← LEAVE ROOM
+            </button>
+        </div>
+    </div>
 
     <!-- Screen 2: Game -->
     <div id="game-screen" class="hidden w-full max-w-5xl flex flex-col lg:flex-row gap-8 items-center justify-center">
-        <!-- Board Area -->
-        <div class="flex-1 w-full flex justify-center">
+        <div class="flex-1 w-full flex flex-col items-center">
+            <div id="online-hud" class="online-hud hidden">
+                <span class="hud-dot" id="hud-dot"></span>
+                <span id="hud-connection">CONNECTED</span>
+                <span class="hud-sep">|</span>
+                <span id="hud-room">ROOM -----</span>
+                <span class="hud-sep">|</span>
+                <span id="hud-you">YOU: —</span>
+            </div>
             <div class="board-container">
                 <div id="board" class="ludo-grid"></div>
                 <div id="tokens-layer"></div>
             </div>
+            <p id="online-wait" class="online-wait hidden"></p>
         </div>
 
         <!-- Controls Area -->
@@ -88,7 +191,7 @@
             <div id="turn-card" class="w-full p-4 rounded-xl mb-4 text-center bg-black border border-[#333]">
                 <h2 id="turn-indicator" class="text-xl font-black transition-all duration-300 uppercase">PLAYER TURN</h2>
             </div>
-            
+
             <p id="game-log" class="text-sm text-slate-500 mb-6 text-center h-12 italic">Initializing...</p>
 
             <button id="dice-btn" class="dice-btn w-full py-6 rounded-2xl shadow-xl mb-6 flex flex-col items-center gap-4 group" onclick="handleDiceClick()">
@@ -100,11 +203,11 @@
                 <span class="font-black text-xs tracking-widest text-slate-400 group-hover:text-white">ROLL SYSTEM</span>
             </button>
 
-                <button id="menu-btn"
+            <button id="menu-btn"
                 onclick="togglePause()"
                 class="w-full mb-4 bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
-                    ⚙ MENU
-                </button>
+                ⚙ MENU
+            </button>
 
             <!-- Rankings -->
             <div class="w-full bg-[#050505] border border-[#27272a] rounded-xl p-4">
@@ -124,15 +227,20 @@
             </svg>
         </div>
         <h1 class="text-4xl font-black text-white mb-2 uppercase">VICTORY</h1>
-        <p class="text-slate-500 mb-8 uppercase tracking-widest text-xs">Battle Finalized</p>
+        <p id="result-subtitle" class="text-slate-500 mb-8 uppercase tracking-widest text-xs">Battle Finalized</p>
         <div id="final-rankings" class="space-y-3 mb-8"></div>
-        <button onclick="location.reload()" class="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-colors">
-            NEW SIMULATION
-        </button>
+        <div id="result-actions" class="space-y-3">
+            <button id="result-primary-btn" onclick="handleResultPrimary()"
+                class="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-colors">
+                NEW SIMULATION
+            </button>
+            <button id="result-secondary-btn" onclick="handleResultSecondary()"
+                class="hidden w-full bg-[#111] border border-zinc-700 hover:border-cyan-400 text-white font-bold py-3 rounded-xl transition-all">
+                LEAVE ROOM
+            </button>
+        </div>
     </div>
 
-    <script src="script.js?v=24" defer></script>
-    <script src="controller.js?v=24" defer></script>
     <div id="settings-modal"
      class="hidden fixed inset-0 z-[60] flex items-center justify-center">
 
@@ -240,7 +348,7 @@
                 ⚙ SETTINGS
             </button>
 
-            <button id="pause-restart-btn" class="pause-btn pause-restart-btn" onclick="location.reload()">
+            <button id="pause-restart-btn" class="pause-btn pause-restart-btn" onclick="restartMatch()">
                 ↻ RESTART MATCH
             </button>
 
@@ -265,5 +373,12 @@
 
 </div>
 
+<div id="online-toast" class="online-toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/socket.io.min.js?v=4.7.5" defer></script>
+<script src="config.js?v=25" defer></script>
+<script src="script.js?v=25" defer></script>
+<script src="controller.js?v=25" defer></script>
+<script src="online.js?v=25" defer></script>
 </body>
 </html>
