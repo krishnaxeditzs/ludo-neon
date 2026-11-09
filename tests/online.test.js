@@ -173,6 +173,46 @@ test("only the host starts and the server keeps both clients in sync", async () 
     bob.close();
 });
 
+test("server auto-executes one legal move and ignores spoofed dice", async () => {
+    const alice = await connect();
+    const bob = await connect();
+
+    const created = await request(alice, "create-room", { name: "Auto Alice" });
+    await request(bob, "join-room", { code: created.code, name: "Auto Bob" });
+    await request(alice, "start-game", {});
+
+    const room = manager.getRoom(created.code);
+    room.game.forcedDice = 3;
+    const red = room.game.game.tokens.find((t) => t.id === `${created.you.color}-0`);
+    red.state = "track";
+    red.relPos = 10;
+
+    const diceEvent = waitFor(bob, "dice-rolled");
+    // A client cannot choose the dice value: the engine ignores this payload.
+    const rolled = await request(alice, "roll-dice", { dice: 1, forced: 1 });
+    const event = await diceEvent;
+
+    assert.equal(rolled.ok, true);
+    assert.equal(event.dice, 3);
+    assert.equal(event.autoMove.tokenId, red.id);
+    assert.equal(event.state.revision, 2);
+    assert.equal(event.state.turnPlayerId, (await request(bob, "request-game-state", {})).state.players[1].id);
+    assert.equal(event.state.tokens.find((t) => t.id === red.id).relPos, 13);
+
+    const replay = await request(alice, "move-token", { tokenId: red.id });
+    assert.equal(replay.ok, false);
+    const reroll = await request(alice, "roll-dice", {});
+    assert.equal(reroll.ok, false);
+
+    const bobState = (await request(bob, "request-game-state", {})).state;
+    assert.equal(bobState.revision, event.state.revision);
+    assert.deepEqual(bobState.tokens, event.state.tokens);
+
+    await request(alice, "leave-room", {});
+    alice.close();
+    bob.close();
+});
+
 test("disconnect, host migration and reconnection restore the seat", async () => {
     const alice = await connect();
     const bob = await connect();

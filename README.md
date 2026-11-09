@@ -31,7 +31,7 @@ Other useful commands:
 ```bash
 npm run dev          # backend with auto-restart (node --watch)
 npm run serve        # optional static-only frontend server on :5173
-npm test             # 19 automated rule / room / sync tests
+npm test             # 26 automated rule / engine / room / sync tests
 ```
 
 ### Test online play on one machine
@@ -72,7 +72,7 @@ The `server` query parameter is remembered in `localStorage`.
 index.html                 existing screens + multiplayer panels/lobby
 style.css                  existing theme + appended multiplayer styles
 script.js                  existing single/local engine (only small guards added)
-controller.js              existing gamepad support (+ online input guard)
+controller.js              gamepad focus/navigation + online gameplay input
 config.js                  frontend runtime config (backend URL)
 online.js                  online client: lobby, socket sync, animation, reconnect
 vendor/socket.io.min.js    pinned Socket.IO browser client (4.7.5)
@@ -82,10 +82,10 @@ server/
   game-engine.js           per-match authoritative wrapper + auto turn end
   room-manager.js          rooms, codes, hosts, reconnect tokens, cleanup
   socket-handler.js        event validation, rate limits, broadcasts, forfeits
-  static-server.js         optional frontend-only dev server
-tests/
+  static-server.js         optional frontend-only dev server  tests/
   core.test.js             rule engine tests (captures, safe zones, home, win…)
-  online.test.js           multi-client room/sync/reconnect/rematch/rate tests
+  game-engine.test.js      server auto-move, base entry, zero/multiple moves
+  online.test.js           multi-client room/sync/auto-move/reconnect/rematch/rate tests
 ```
 
 ### Technical analysis of the original project
@@ -136,10 +136,41 @@ browser B ─┘                       └─ validation + rate limits
 * After each change the server broadcasts a full snapshot
   (`revision`, `turnIndex`, `dice`, `state`, `legalTokenIds`, `players`, `tokens`,
   `ranks`, `winner`). Clients animate the move and then apply the snapshot.
+* A roll with exactly one legal token move is executed immediately by the
+  authoritative engine; the dice event carries the move so every client can
+  animate it. Base tokens are included in the legal-move count.
 * If a roll has no legal move (or three sixes), the server auto-ends the turn
   after a short delay.
+* Online dice reuse the original roll animation. The rolling client starts a
+  preview immediately, the server supplies the result, and all clients settle
+  on the same value before state advances; reduced-motion users skip the spin.
 * `revision` increases on every mutation, so stale/replayed actions and
-  out-of-order snapshots can be detected and ignored.
+  out-of-order snapshots are detected and ignored. The client also ignores
+  lower-revision snapshots and queues newer ones while an animation is running.
+
+### Gamepad controls
+
+Mode tabs are reached with **B** from any setup screen (or **↑** from the first
+Local/Online control). Standard mapping:
+
+| Input | Action |
+| --- | --- |
+| D-pad / left stick | Move focus; ←/→ changes selects, counts and colors |
+| A | Confirm mode/control; roll dice; confirm a legal token |
+| B | Back to mode tabs; cancel text editing; leave lobby |
+| X | Confirm the selected online token |
+| LB / RB | Cycle legal tokens (←/→ also works) |
+| START | Pause / resume |
+| Y | Toggle Always Six in Single/Local only |
+
+Text inputs take real keyboard focus; the physical keyboard remains usable, and
+mouse/touch listeners are unchanged. Hidden controls and disabled start buttons
+are excluded from the focus list.
+
+**Always Six:** Y toggles the original offline cheat with an on-screen ON/OFF
+notice. It sets `window.debugForcedDice` only for the local dice engine. Online
+rolls never read that variable; the server owns the dice, so Y is rejected with
+a clear “offline modes only” message during an online match.
 
 ### Disconnection & reconnection
 
@@ -265,14 +296,16 @@ GitHub Pages **cannot** run the Socket.IO server. Use it only for static files.
 
 ## 6. Testing
 
-Automated (`npm test`, 19 tests):
+Automated (`npm test`, 26 tests):
 
 * Rules: base escape, 6/1 extra roll, no-move turn pass, capture, safe zones,
   exact home, win/ranks, three sixes, ownership/phase validation, forfeit.
+* Server engine: automatic single legal move (including base tokens), zero and
+  multiple legal moves, capture/extra-turn preservation, stale replay rejection.
 * Online: create/join, invalid code, duplicate name, full room, host-only start,
-  deterministic dice + move sync, replay rejection, host migration,
-  reconnection token validation, mid-match forfeit, rematch authorization,
-  rate limiting.
+  deterministic dice + move sync, spoofed dice payload rejection, auto-move sync,
+  replay rejection, host migration, reconnection token validation, mid-match
+  forfeit, rematch authorization, rate limiting.
 
 Manually verified in the browser (two sessions):
 
@@ -307,6 +340,6 @@ Use normal + incognito windows or separate devices:
 * Leaving a live match forfeits; if one player remains, the match ends.
 * Rematch uses currently connected players only.
 * Local mode is all-human; AI remains a single-player feature.
-* New menu/lobby panels are mouse/touch-first; gamepad navigation was only
-  extended with safety guards, not full lobby navigation.
+* Gamepad support is implemented and simulated in-browser; a physical controller
+  and real mobile hardware were not available for this audit.
 * No spectators, chat or server-side match history.

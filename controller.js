@@ -600,11 +600,28 @@ if(setupVisible){
 
             case BTN.Y:
 
+            if (window.LudoOnline && window.LudoOnline.active) {
+
+                showControllerToast(
+                    "ALWAYS SIX",
+                    "Offline modes only — the server owns online dice",
+                    false
+                );
+
+                Haptics.toggleOff();
+                break;
+
+            }
+
             Debug.alwaysSix = !Debug.alwaysSix;
 
-            console.log(
-                "🎲 Always Six:",
-                Debug.alwaysSix ? "ON" : "OFF"
+            if (!Debug.alwaysSix) window.debugForcedDice = null;
+
+            showControllerToast(
+                Debug.alwaysSix ? "ALWAYS SIX ON" : "ALWAYS SIX OFF",
+                Debug.alwaysSix
+                    ? "Every controller roll is a six — offline modes"
+                    : "Normal dice restored"
             );
 
             if(Debug.alwaysSix){
@@ -2010,6 +2027,18 @@ function mpHandleOnlineGame(button) {
                 mpCycleOnlineToken(button === BTN.LEFT ? -1 : 1);
 
             }
+
+            return true;
+
+        case BTN.Y:
+
+            showControllerToast(
+                "ALWAYS SIX",
+                "Offline modes only — the server owns online dice",
+                false
+            );
+
+            Haptics.toggleOff();
 
             return true;
 

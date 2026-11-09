@@ -14,6 +14,9 @@ class GameEngine {
         this.game = core.createGame({ players });
         this.autoEndTimer = null;
         this.onAutoEnd = null;
+        // Server-side convenience: a roll with exactly one legal token move is
+        // applied immediately so every client sees one authoritative result.
+        this.autoSingleMove = options.autoSingleMove !== false;
         // Test-only injection; never set from network input or env.
         this.forcedDice = Number.isInteger(options.forcedDice) ? options.forcedDice : null;
     }
@@ -79,9 +82,25 @@ class GameEngine {
             : core.rollDice(this.game);
         if (!result.ok) return result;
 
+        let autoMove = null;
+        if (
+            this.autoSingleMove &&
+            !result.autoEndTurn &&
+            result.legalTokenIds.length === 1
+        ) {
+            const moved = core.moveToken(this.game, result.legalTokenIds[0]);
+            if (moved.ok) {
+                autoMove = moved;
+                this.clearTimer();
+            }
+        }
+
         if (result.autoEndTurn) this.scheduleAutoEnd();
 
-        return Object.assign({}, result, { state: this.publicState() });
+        return Object.assign({}, result, {
+            state: this.publicState(),
+            autoMove: autoMove || null
+        });
     }
 
     move(playerId, tokenId) {

@@ -442,12 +442,19 @@ function attachSocketHandlers(io, manager) {
                 tripleSix: result.tripleSix,
                 noMoves: result.noMoves,
                 autoEndTurn: result.autoEndTurn,
-                extraTurn: result.extraTurn
+                extraTurn: result.extraTurn,
+                autoMove: result.autoMove || null
             });
+
+            if (result.autoMove && result.autoMove.gameOver) {
+                announceGameOver(room);
+            }
 
             return reply(ack, {
                 ok: true,
                 dice: result.dice,
+                autoMove: result.autoMove || null,
+                gameOver: !!(result.autoMove && result.autoMove.gameOver),
                 state: result.state
             });
         });

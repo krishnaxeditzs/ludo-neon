@@ -32,7 +32,12 @@
         movePending: false,
         diceLocked: false,
         wantReconnect: false,
-        reconnecting: false
+        reconnecting: false,
+        animationQueue: Promise.resolve(),
+        animationEpoch: 0,
+        pendingResults: null,
+        dicePreviewTimer: null,
+        dicePreviewSafety: null
     };
 
     /* ------------------------------ helpers ------------------------------ */
@@ -193,6 +198,7 @@
             Online.connected = false;
             Online.diceLocked = false;
             Online.movePending = false;
+            stopDicePreview();
             updateConnectionUI();
             if (Online.active || Online.room) {
                 showBanner("Connection lost — reconnecting to the room…");
@@ -225,47 +231,61 @@
         });
 
         socket.on("dice-rolled", (payload) => {
-            if (!payload) return;
-            Online.diceLocked = false;
-            if (payload.state) applyServerState(payload.state);
-            showDiceValue(payload.dice);
-            playSound("dice");
-            const name = (payload.playerName || payload.color || "Player").toUpperCase();
-            if (payload.dice === 0) {
-                logMsg(`${name}: three consecutive sixes — turn skipped.`);
-                toast("Three sixes — turn lost!", "error");
-            } else if (payload.noMoves) {
-                logMsg(`${name} rolled ${payload.dice} — no legal moves.`);
-            } else {
-                logMsg(`${name} rolled ${payload.dice}.`);
-            }
-            updateDiceAvailability(Online.gameState);
+            if (!payload || !payload.state) return;
+            stopDicePreview();
+            Online.diceLocked = true;
+            enqueueAnimation(async (epoch) => {
+                Online.animating = true;
+                try {
+                    playSound("dice");
+                    await animateDiceRoll(payload.dice);
+                    const name = (payload.playerName || payload.color || "Player").toUpperCase();
+                    if (payload.dice === 0) {
+                        logMsg(`${name}: three consecutive sixes — turn skipped.`);
+                        toast("Three sixes — turn lost!", "error");
+                    } else if (payload.noMoves) {
+                        logMsg(`${name} rolled ${payload.dice} — no legal moves.`);
+                    } else {
+                        logMsg(`${name} rolled ${payload.dice}.`);
+                    }
+                    if (payload.autoMove) {
+                        await runMoveAnimation(
+                            Object.assign({}, payload.autoMove, {
+                                playerName: payload.playerName,
+                                color: payload.color
+                            })
+                        );
+                    }
+                } finally {
+                    if (epoch === Online.animationEpoch) {
+                        settleAfterAnimation(payload.state);
+                    }
+                }
+            });
         });
 
-        socket.on("token-moved", async (payload) => {
+        socket.on("token-moved", (payload) => {
             if (!payload || !payload.state) return;
-            Online.movePending = false;
-            await runMoveAnimation(payload);
-            Online.animating = false;
-            applyServerState(payload.state, { force: true });
-            if (Online.pendingState) {
-                const pending = Online.pendingState;
-                Online.pendingState = null;
-                if (pending.revision > payload.state.revision) {
-                    applyServerState(pending, { force: true });
+            enqueueAnimation(async (epoch) => {
+                Online.animating = true;
+                Online.movePending = true;
+                try {
+                    await runMoveAnimation(payload);
+                } finally {
+                    if (epoch === Online.animationEpoch) {
+                        settleAfterAnimation(payload.state);
+                    }
                 }
-            }
-            Online.diceLocked = false;
+            });
         });
 
         socket.on("game-state-updated", (payload) => {
             if (!payload || !payload.state) return;
-            applyServerState(payload.state);
-            updateDiceAvailability(payload.state);
-            if (payload.reason === "turn-ended") {
+            if (payload.reason === "turn-ended" && !Online.animating) {
                 Online.movePending = false;
                 Online.diceLocked = false;
             }
+            applyServerState(payload.state);
         });
 
         socket.on("player-disconnected", (payload) => {
@@ -299,6 +319,10 @@
 
         socket.on("game-over", (payload) => {
             if (!payload || !payload.state) return;
+            if (Online.animating) {
+                Online.pendingResults = payload.state;
+                return;
+            }
             showOnlineResults(payload.state);
         });
 
@@ -311,12 +335,117 @@
 
         socket.on("action-rejected", (payload) => {
             if (!payload || !payload.error) return;
+            stopDicePreview();
             Online.diceLocked = false;
             Online.movePending = false;
             updateDiceAvailability(Online.gameState);
             toast(payload.error, "error");
             logMsg(payload.error);
         });
+    }
+
+    /* --------------------------- animation queue ------------------------- */
+
+    function reducedMotion() {
+        return !!(
+            window.matchMedia &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        );
+    }
+
+    function randomDiceFace(exclude) {
+        let face = Math.floor(Math.random() * 6) + 1;
+        if (exclude >= 1 && exclude <= 6 && face === exclude) {
+            face = (face % 6) + 1;
+        }
+        return face;
+    }
+
+    function startDicePreview() {
+        if (reducedMotion() || Online.dicePreviewTimer) return;
+        const diceEl = $("dice-visual");
+        if (!diceEl) return;
+        const dots = diceEl.querySelectorAll(".dot");
+        diceEl.classList.remove("roll-animation");
+        void diceEl.offsetWidth;
+        diceEl.classList.add("roll-animation");
+        Online.dicePreviewTimer = setInterval(() => {
+            renderDice(randomDiceFace(0), dots, DICE_FACES);
+        }, 70);
+        Online.dicePreviewSafety = setTimeout(() => {
+            stopDicePreview();
+            Online.diceLocked = false;
+            updateDiceAvailability(Online.gameState);
+        }, 8000);
+    }
+
+    function stopDicePreview() {
+        if (Online.dicePreviewTimer) {
+            clearInterval(Online.dicePreviewTimer);
+            Online.dicePreviewTimer = null;
+        }
+        if (Online.dicePreviewSafety) {
+            clearTimeout(Online.dicePreviewSafety);
+            Online.dicePreviewSafety = null;
+        }
+        const diceEl = $("dice-visual");
+        if (diceEl) diceEl.classList.remove("roll-animation");
+        const gs = Online.gameState;
+        showDiceValue(gs && gs.state === "awaiting-move" ? gs.dice : 0);
+    }
+
+    async function animateDiceRoll(value) {
+        const diceEl = $("dice-visual");
+        if (!diceEl) return;
+        const dots = diceEl.querySelectorAll(".dot");
+
+        if (reducedMotion()) {
+            showDiceValue(value);
+            await sleep(120);
+            return;
+        }
+
+        diceEl.classList.remove("roll-animation");
+        void diceEl.offsetWidth;
+        diceEl.classList.add("roll-animation");
+        for (let i = 0; i < 8; i++) {
+            renderDice(randomDiceFace(value), dots, DICE_FACES);
+            await sleep(30);
+        }
+        showDiceValue(value);
+        await sleep(160);
+        diceEl.classList.remove("roll-animation");
+    }
+
+    function enqueueAnimation(task) {
+        const epoch = Online.animationEpoch;
+        const guarded = () => (epoch === Online.animationEpoch ? task(epoch) : null);
+        const run = Online.animationQueue.then(guarded, guarded);
+        Online.animationQueue = run.catch(() => {});
+        return run;
+    }
+
+    function settleAfterAnimation(state) {
+        Online.animating = false;
+        Online.diceLocked = false;
+        Online.movePending = false;
+
+        if (state) applyServerState(state, { force: true });
+
+        const pending = Online.pendingState;
+        Online.pendingState = null;
+        if (pending && (!Online.gameState || pending.revision > Online.gameState.revision)) {
+            applyServerState(pending, { force: true });
+        }
+
+        const results = Online.pendingResults;
+        Online.pendingResults = null;
+        const gameScreen = $("game-screen");
+        if (results && gameScreen && !gameScreen.classList.contains("hidden")) {
+            showOnlineResults(results);
+        }
+
+        updateDiceAvailability(Online.gameState);
     }
 
     /* --------------------------- setup / lobby UI ------------------------- */
@@ -660,8 +789,13 @@
     function applyServerState(gs, opts) {
         opts = opts || {};
         if (!gs) return;
+        if (!opts.force && Online.gameState && gs.revision < Online.gameState.revision) {
+            return;
+        }
         if (Online.animating && !opts.force) {
-            Online.pendingState = gs;
+            if (!Online.pendingState || gs.revision >= Online.pendingState.revision) {
+                Online.pendingState = gs;
+            }
             return;
         }
         if (!Online.boardReady) {
@@ -831,6 +965,7 @@
 
     function showOnlineResults(gs) {
         Online.active = true;
+        Online.pendingResults = null;
         show("game-screen", false);
         show("result-screen", true);
         hideHud();
@@ -954,8 +1089,12 @@
         opts = opts || {};
         Online.active = true;
         Online.wantReconnect = true;
+        stopDicePreview();
+        Online.animationEpoch += 1;
+        Online.animationQueue = Promise.resolve();
         Online.animating = false;
         Online.pendingState = null;
+        Online.pendingResults = null;
         Online.movePending = false;
         Online.diceLocked = false;
 
@@ -973,6 +1112,7 @@
             rebuildBoard(gs);
         }
         applyServerState(gs, { force: true });
+        showDiceValue(gs.state === "awaiting-move" ? gs.dice : 0);
         updateConnectionUI();
 
         bgMusic.play().catch(() => {});
@@ -981,9 +1121,17 @@
     }
 
     function leaveUiToSetup() {
+        stopDicePreview();
+        Online.animationEpoch += 1;
+        Online.animationQueue = Promise.resolve();
         Online.active = false;
         Online.wantReconnect = false;
         Online.boardReady = false;
+        Online.animating = false;
+        Online.pendingState = null;
+        Online.pendingResults = null;
+        Online.movePending = false;
+        Online.diceLocked = false;
         Online.gameState = null;
         Online.room = null;
         Online.you = null;
@@ -1027,15 +1175,18 @@
         }
         Online.diceLocked = true;
         updateDiceAvailability(gs);
+        startDicePreview();
         emitAck("roll-dice", {})
             .then((response) => {
                 if (!response || !response.ok) {
+                    stopDicePreview();
                     Online.diceLocked = false;
                     updateDiceAvailability(Online.gameState);
                     if (response) toast(response.error || "Roll rejected.", "error");
                 }
             })
             .catch((err) => {
+                stopDicePreview();
                 Online.diceLocked = false;
                 updateDiceAvailability(Online.gameState);
                 toast(connectionError(err), "error");
