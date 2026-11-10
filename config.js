@@ -12,5 +12,5 @@
  * or leave it empty and share links like ?server=https://...
  */
 window.LUDO_CONFIG = {
-    serverUrl: ""
+    serverUrl: "https://ludo-neon-xgy8.onrender.com"
 };
